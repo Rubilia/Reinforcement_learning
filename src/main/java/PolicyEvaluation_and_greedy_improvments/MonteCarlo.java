@@ -20,7 +20,7 @@ i - number of current epoch
 public class MonteCarlo {
     static List<Double> values = new ArrayList<>(), realValues;
     static double zeroRevard = -1.0, endReward = 1.0;
-    static long iterationsAmount = 5000, epochsAmount = 2;
+    static long iterationsAmount = 1000, epochsAmount = 2;
     static int iterations = 0, statesAmount = 50;
     static double alpha = 1.0, y = 0.9;
     static int i = 0;

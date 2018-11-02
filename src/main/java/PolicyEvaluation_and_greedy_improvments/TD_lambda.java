@@ -7,18 +7,19 @@ import java.util.List;
 import java.util.Random;
 
 import static Tools.OtherTools.cut;
+import static Tools.OtherTools.create;
 
-public class TD {
+public class TD_lambda {
     static List<Double> values = new ArrayList<>(), realValues = new ArrayList<>();
     static double zeroRevard = -1.0, endReward = 1.0;
-    static long iterationsAmount = 800, epochsAmount = 2;
+    static long iterationsAmount = 400, epochsAmount = 2;
     static int iterations = 0, statesAmount = 50;
-    static double alpha, y = 0.9;
+    static double alpha, y = 0.9, λ = 0.2;
     static int i = 0;
     public static void main(String[] args) {
         alpha=5/(((double)iterationsAmount)/(double)statesAmount);
         System.out.println("Below written values for V(s) for Random Walk. Each learning iteration is highlighted by #n===, n - iteration id");
-        values=create(statesAmount+2);
+        values= create(statesAmount+2);
         realValues = create(statesAmount+2);
         System.out.println("#1=============================================");
         for (i = 0; i < epochsAmount; i++) {
@@ -37,7 +38,11 @@ public class TD {
         //Random walk
         Random rnd = new Random();
         int currentPos;
-        void init(){ currentPos = rnd.nextInt(statesAmount); }
+        List<Double> E;
+        void init(){
+            currentPos = rnd.nextInt(statesAmount);
+            E = create(statesAmount);
+        }
         @Override
         public void run() {
             init();
@@ -72,15 +77,13 @@ public class TD {
         }
 
         public void update(Pair<Double, Integer> reward){
-            double newValue = values.get(reward.getValue()+1) + alpha*(reward.getKey()+y*values.get(currentPos+1)-values.get(reward.getValue()+1));
-            values.set(reward.getValue()+1, newValue);
+            double TD_error = reward.getKey()+y*values.get(currentPos+1)-values.get(reward.getValue()+1);
+            for (int j = 0; j < statesAmount; j++) {
+                if (j!=reward.getValue()){E.set(j, E.get(j)*y*λ);}
+                else{E.set(j, E.get(j)*y*λ+1);}
+                values.set(j+1, values.get(j+1)+alpha*TD_error*E.get(j));
+            }
         }
     };
-    static List<Double> create(int n){
-        List<Double> ret = new ArrayList<>();
-        for (int i = 0; i < n; i++) {
-            ret.add(0.0);
-        }
-        return ret;
-    }
+
 }
