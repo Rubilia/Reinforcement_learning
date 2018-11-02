@@ -21,6 +21,13 @@ public class Pair<K, V>{
     }
     @Override
     public String toString() {
-        return value.toString()+": " +key.toString();
+        return key.toString()+": " + value.toString();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        Pair<K, V> pair = (Pair<K, V>)obj;
+        boolean b1 = this.key.equals(pair.key), b2 = this.value.equals(pair.value);
+        return b1&&b2;
     }
 }
