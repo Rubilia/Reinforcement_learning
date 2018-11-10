@@ -10,11 +10,12 @@ public class Sarsa {
     static List<Integer> graphIndexes = new ArrayList<>();
     final static Pair<Integer, Integer>[] negativePoints = new Pair[] {new Pair<>(5, 5), new Pair<>(6, 5), new Pair<>(3, 4)};
     final static Pair<Integer, Integer> positivePoint = new Pair<>(5, 6), finalState = new Pair<>(6, 6);
-    static double epsilon = 0.25, alpha, y = 0.8;
+    static double epsilon = 0.5, alpha, y = 0.8;
     static int ActionSpaceSize = 4;
-    static int epoch = 0, epochsAmount = 15, iteration = 0, iterationsAmount = 1000;
+    static int epoch = 0, epochsAmount = 1, iteration = 0, iterationsAmount = 200;
     public static void main(String[] args) {
-        graphIndexes.add(0);graphIndexes.add(epochsAmount-1);
+        graphIndexes.add(0);
+//        graphIndexes.add(epochsAmount-1);
         alpha = 5/(double)iterationsAmount;
         Q = initQ();
         for (epoch = 0; epoch < epochsAmount; epoch++){
@@ -62,7 +63,7 @@ public class Sarsa {
                 iteration++;
                 init();
             }
-            if (graphIndexes.contains(epoch)&&epoch!=0){ Graph.buildPolicy2D(visualizePolicy(), 7, "Agents policy after " + (epoch+1) + " epochs"); }
+            if (graphIndexes.contains(epoch)){ Graph.buildPolicy2D(visualizePolicy(), 7, "Agents policy after " + (epoch+1) + " epochs"); }
         }
         int produceAction(boolean greedy, Pair<Integer, Integer> state){
             if (rnd.nextDouble()<epsilon&&!greedy){return rnd.nextInt(ActionSpaceSize);}
@@ -85,7 +86,7 @@ public class Sarsa {
                 if (currentState.getKey()!=6){next = new Pair<>(currentState.getKey()+1, currentState.getValue());}
             }
             if (isInsideWall(next)){next=currentState;}
-            if (contains(negativePoints, next)){reward+=-0.05;}
+            if (contains(negativePoints, next)){reward+=-1.8;}
             else if (next.equals(positivePoint)){reward+=0.05;}
             else if (next.equals(finalState))
             { reward = 10*12/(stepcounter); }
@@ -115,7 +116,7 @@ public class Sarsa {
             String[][] ret = new String[7][7];
             for (int y = 6; y >= 0; y--) {
                 for (int x = 0; x <7; x++) {
-                    if (isInsideWall(new Pair<>(x, y))){ret[6-y][x] = " ";continue;}
+                    if (isInsideWall(new Pair<>(x, y))||(x==6&&y==6)){ret[6-y][x] = " ";continue;}
                     int action = produceAction(true, new Pair<>(x, y));
                     if (action==0){ret[6-y][x] = "↑";}
                     else if (action==1){ret[6-y][x] = "↓";}
