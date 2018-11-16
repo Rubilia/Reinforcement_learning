@@ -15,7 +15,6 @@ public class Sarsa {
     static int epoch = 0, epochsAmount = 1, iteration = 0, iterationsAmount = 200;
     public static void main(String[] args) {
         graphIndexes.add(0);
-//        graphIndexes.add(epochsAmount-1);
         alpha = 5/(double)iterationsAmount;
         Q = initQ();
         for (epoch = 0; epoch < epochsAmount; epoch++){

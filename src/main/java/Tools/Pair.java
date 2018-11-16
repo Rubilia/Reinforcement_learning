@@ -30,4 +30,9 @@ public class Pair<K, V>{
         boolean b1 = this.key.equals(pair.key), b2 = this.value.equals(pair.value);
         return b1&&b2;
     }
+
+    @Override
+    public Pair<K, V> clone() {
+        return new Pair<>(key, value);
+    }
 }

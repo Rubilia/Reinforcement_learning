@@ -1,5 +1,9 @@
-package DQN_learning;
+package Double_DQN_examples;
 
+import DQN_learning.DQN_Learner;
+import DQN_learning.Environment;
+import DQN_learning.State;
+import DQN_learning.Step;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -20,12 +24,12 @@ public class RandomWalk extends Environment {
     public Step performAction(int a) {
         double reward = otherReward;
         boolean b = true;
-        INDArray S = Nd4j.create(new double[]{(double)currentPos/(double)n}), newS;
+        INDArray S = Nd4j.create(new double[]{(double)currentPos/2.0}), newS;
         if (a==0){ currentPos--; }
         else{currentPos++;}
         if (currentPos==-1){reward = leftReward;newS = Nd4j.create(new double[]{-1.0});end=true;}
         else if (currentPos==n){reward=rightReward;newS = Nd4j.create(new double[]{-0.5});end=true;}
-        else{newS = Nd4j.create(new double[]{(double)currentPos/(double)n});b=false;}
+        else{newS = Nd4j.create(new double[]{(double)currentPos/2.0});b=false;}
         counter++;
         return  new Step(new State(S), a, reward, new State(newS), b);
     }
@@ -46,6 +50,16 @@ public class RandomWalk extends Environment {
     public State getCurrentState() {
         if (currentPos==-1){return new State(Nd4j.create(new double[]{-1.0}));}
         else if (currentPos==n){return new State(Nd4j.create(new double[]{-0.5}));}
-        else{ return new State(Nd4j.create(new double[]{(double)currentPos/(double)n})); }
+        else{ return new State(Nd4j.create(new double[]{(double)currentPos/2.0})); }
+    }
+
+    @Override
+    public String getScore(DQN_Learner dqn) {
+        return "";
+    }
+
+    @Override
+    protected Environment clone() {
+        return new RandomWalk(n, limit);
     }
 }

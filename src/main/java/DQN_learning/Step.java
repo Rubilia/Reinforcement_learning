@@ -25,4 +25,13 @@ public class Step {
     public double getR() {
         return r;
     }
+    @Override
+    public String toString() {
+        return "Action: " + a + ", reward: " + r + (isTerminate?"; Final state":"; Not final state");
+    }
+
+    @Override
+    protected Step clone() {
+        return new Step(beginStae, a, r, endState, isTerminate);
+    }
 }

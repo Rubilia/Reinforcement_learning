@@ -1,5 +1,6 @@
-package DQN_learning;
+package Double_DQN_examples;
 
+import DQN_learning.DQN_Learner;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -12,12 +13,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
-public class Main {
-    public static void main(String[] args) {
+public class RandomWalkDQN {
+    public static void main(String[] args) throws Exception {
         int n = 100;
         RandomWalk randomWalk = new RandomWalk(n, 100);
         DQN_Learner learner = new DQN_Learner(config(2));
@@ -26,9 +25,8 @@ public class Main {
         learner.setExperienceStoredMaxAmount(100);
         learner.setMiniBatchSize(4);
         learner.setNetUpdateFrequncy(20);
-        learner.setLearningEpochsPerIteration(1);
-        learner.setAlpha(0.02);
-        learner.Learn(3);
+        learner.setLearningEpochsPerIteration(4);
+        learner.Learn(5);
         buildPolicy(learner.getTargetNetwork(), n);
     }
 
@@ -36,7 +34,7 @@ public class Main {
         String[] policy = new String[n];
         policy[0] = getValue(net.output(Nd4j.create(new double[]{-1.0})));
         for (int i = 1; i < n-1; i++) {
-            policy[i] = getValue(net.output(Nd4j.create(new double[]{(double)i/(double)n})));
+            policy[i] = getValue(net.output(Nd4j.create(new double[]{(double)i/2.0})));
         }
         policy[n-1] = getValue(net.output(Nd4j.create(new double[]{-0.5})));
         String[][] ret = new String[][]{policy};
