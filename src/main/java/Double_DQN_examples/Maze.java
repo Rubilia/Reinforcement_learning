@@ -5,18 +5,18 @@ import DQN_learning.Environment;
 import DQN_learning.State;
 import DQN_learning.Step;
 import Tools.Pair;
-import org.nd4j.linalg.factory.Nd4j;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class Maze extends Environment {
     private double[][] maze;
     public double pathLenght = 0.0;
-    private final double wallValue = -1.0, freeValue = 1.0, AgentValue = 0.5;
+    private final double wallValue = -1.0, freeValue = 0.0, AgentValue = 10.0;
     private List<Pair<Integer, Integer>> Stack;
     private int h, w, limit, stepCounter;
     private boolean differentMazes;
-    private double WallReward = -0.5, ReturnReward = -0.05, MoveRward = 0.25, EndReward = 2.0, LimReward, RewardCounter;
+    private double WallReward = -0.2, ReturnReward = -0.05, MoveRward = 0.1, EndReward = 1.0, LimReward, RewardCounter;
     public int Xcurrent = 1, Ycurrent = 1, Xend, Yend;
     public Maze(int h, int w, int limit, boolean differentMazes) throws Exception {
         if (h*w%2==0){throw new Exception("Unable to create a maze with even side");}
@@ -33,7 +33,7 @@ public class Maze extends Environment {
         MazeGenerator maze = new MazeGenerator(w/2, h/2);
         this.maze = convert(maze.maze, w/2, h/2);
         this.differentMazes=differentMazes;
-        this.LimReward = -h*w/64.0;
+        this.LimReward = -h*w/4.0;
         this.RewardCounter = 0.0;
         this.Stack = new ArrayList<>();
         this.stepCounter=0;
@@ -63,15 +63,15 @@ public class Maze extends Environment {
         return ret;
     }
     private State getInput(){
-        double[] inputVector = new double[(h-2)*(w-2)+2];
+        double[][][][] inputConv = new double[1][1][w-2][h-2];
+        double[] input = new double[(h-2)*(w-2)];
         for (int x = 1; x < w-1; x++) {
             for (int y = 1; y < h-1; y++) {
-                inputVector[(x-1)+(w-2)*(y-1)] = (x==Xcurrent&&y==Ycurrent)?AgentValue:maze[x][y];
+                inputConv[0][0][x-1][y-1] = (x==Xcurrent&&y==Ycurrent)?AgentValue:maze[x][y];
+                input[x-1+(y-1)*(w-2)] = (x==Xcurrent&&y==Ycurrent)?AgentValue:maze[x][y];
             }
         }
-        inputVector[(h-2)*(w-2)] = (Xcurrent-w/2);
-        inputVector[(h-2)*(w-2)+1] = (Ycurrent-h/2);
-        return new State(Nd4j.create(inputVector));
+        return new State(input, inputConv);
     }
     public void printMaze(){
         for (int i = 0; i < h; i++) {
@@ -145,7 +145,7 @@ public class Maze extends Environment {
         return getInput();
     }
     @Override
-    public String getScore(DQN_Learner dqn) {
+    public Pair<String, Boolean> getScore(DQN_Learner dqn){
         if (!differentMazes) {
             Maze m = null;
             try {
@@ -156,10 +156,11 @@ public class Maze extends Environment {
             while (!m.isEnd()) {
                 m.performAction(dqn.produceActionGreedy(m.getCurrentState(), dqn.getTargetNetwork()));
             }
-            return "avg path: " + m.pathLenght + "; " + ((m.Xcurrent == m.Xend || m.Ycurrent == m.Yend) ? "end reached" : "end isn`t reached");
+            return new Pair<>("avg path: " + m.pathLenght + "; " + ((m.Xcurrent == m.Xend || m.Ycurrent == m.Yend) ? "end reached" : "end isn`t reached"), (m.Xcurrent == m.Xend || m.Ycurrent == m.Yend));
         }
         else{
             double avgPath = 0.0, n = 10.0, scoreCounter = 0.0;
+            boolean b = true;
             for (int i = 0; i < n; i++) {
                 Maze m = null;
                 try {
@@ -169,13 +170,15 @@ public class Maze extends Environment {
                 while (!m.isEnd()) {
                     m.performAction(dqn.produceActionGreedy(m.getCurrentState(), dqn.getTargetNetwork()));
                 }
+                b&=m.Xcurrent==m.Xend&&m.Ycurrent==m.Yend;
                 avgPath+=m.pathLenght;
                 scoreCounter+= (m.Xcurrent == m.Xend || m.Ycurrent == m.Yend) ?1.0:0.0;
             }
             avgPath/=n;
             scoreCounter/=n;
-            return "avg path: " + avgPath + "; end reached in " +scoreCounter*100 +"% cases";
+            return new Pair<>("avg path: " + avgPath + "; end reached in " +scoreCounter*100 +"% cases", b);
         }
+
     }
     @Override
     protected Environment clone() {

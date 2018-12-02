@@ -1,0 +1,16 @@
+***************************
+*** @ ***               ***
+***   ***************   ***
+***                     ***
+*********************   ***
+***         ***         ***
+***   ***   ***   *********
+***   ***               ***
+***************************
+
+epoch #0: epsilon: 1.0, avg path: 4.0; end isn`t reached
+epoch #1: epsilon: 1.0, avg path: 4.0; end isn`t reached
+epoch #2: epsilon: 1.0, avg path: 6.0; end isn`t reached
+epoch #3: epsilon: 1.0, avg path: 6.0; end isn`t reached
+epoch #4: epsilon: 1.0, avg path: 6.0; end isn`t reached
+epoch #5: epsilon: 1.0, avg path: 10.0; end reached
