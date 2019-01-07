@@ -1,4 +1,4 @@
-package DQN_learning;
+package DQN_learning.Learner;
 
 import org.nd4j.linalg.dataset.api.iterator.BaseDatasetIterator;
 import org.nd4j.linalg.dataset.api.iterator.fetcher.DataSetFetcher;

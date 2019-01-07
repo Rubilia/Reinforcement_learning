@@ -1,4 +1,4 @@
-package DQN_learning;
+package DQN_learning.Environment;
 
 public class State{
     private double[] state;
@@ -15,5 +15,16 @@ public class State{
     @Override
     public String toString() {
         return state.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof State))return false;
+        State s = (State)o;
+        if (state.length!=s.state.length)return false;
+        for (int i = 0; i < state.length; i++) {
+            if (s.state[i]!=state[i])return false;
+        }
+        return true;
     }
 }

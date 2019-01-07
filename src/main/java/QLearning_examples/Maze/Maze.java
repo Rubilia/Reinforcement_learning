@@ -1,9 +1,9 @@
-package Double_DQN_examples;
+package QLearning_examples.Maze;
 
-import DQN_learning.DQN_Learner;
-import DQN_learning.Environment;
-import DQN_learning.State;
-import DQN_learning.Step;
+import DQN_learning.Environment.Environment;
+import DQN_learning.Environment.State;
+import DQN_learning.Environment.Step;
+import DQN_learning.Learner.Learner;
 import Tools.Pair;
 
 import java.util.ArrayList;
@@ -15,10 +15,9 @@ public class Maze extends Environment {
     private final double wallValue = -1.0, freeValue = 0.0, AgentValue = 10.0;
     private List<Pair<Integer, Integer>> Stack;
     private int h, w, limit, stepCounter;
-    private boolean differentMazes;
-    private double WallReward = -0.2, ReturnReward = -0.05, MoveRward = 0.1, EndReward = 1.0, LimReward, RewardCounter;
+    private double WallReward = -0.1, ReturnReward = -0.1, MoveRward = 0.2, EndReward = 30.0, LimReward, RewardCounter;
     public int Xcurrent = 1, Ycurrent = 1, Xend, Yend;
-    public Maze(int h, int w, int limit, boolean differentMazes) throws Exception {
+    public Maze(int h, int w, int limit) throws Exception {
         if (h*w%2==0){throw new Exception("Unable to create a maze with even side");}
         this.limit=limit;
         this.h = h;
@@ -32,8 +31,7 @@ public class Maze extends Environment {
         }
         MazeGenerator maze = new MazeGenerator(w/2, h/2);
         this.maze = convert(maze.maze, w/2, h/2);
-        this.differentMazes=differentMazes;
-        this.LimReward = -h*w/4.0;
+        this.LimReward = -h*w/16.0;
         this.RewardCounter = 0.0;
         this.Stack = new ArrayList<>();
         this.stepCounter=0;
@@ -127,63 +125,30 @@ public class Maze extends Environment {
         this.Xcurrent = 1;
         this.Ycurrent = 1;
         this.stepCounter=0;
-        if (differentMazes){
-            maze = new double[h][w];
-            for(int i = 0; i < h; i++){
-                for(int j = 0; j < w; j++){
-                    if((i % 2 != 0  && j % 2 != 0) && (i < h-1 && j < w-1)) maze[i][j] = freeValue;
-                    else maze[i][j] = wallValue;
-                }
-            }
-            MazeGenerator maze = new MazeGenerator(w/2, h/2);
-            this.maze = convert(maze.maze, w/2, h/2);
-        }
     }
 
     @Override
     public State getCurrentState() {
         return getInput();
     }
-    @Override
-    public Pair<String, Boolean> getScore(DQN_Learner dqn){
-        if (!differentMazes) {
-            Maze m = null;
-            try {
-                m = (Maze) this.clone();
-            } catch (Exception e) {
-            }
-            m.reset();
-            while (!m.isEnd()) {
-                m.performAction(dqn.produceActionGreedy(m.getCurrentState(), dqn.getTargetNetwork()));
-            }
-            return new Pair<>("avg path: " + m.pathLenght + "; " + ((m.Xcurrent == m.Xend || m.Ycurrent == m.Yend) ? "end reached" : "end isn`t reached"), (m.Xcurrent == m.Xend || m.Ycurrent == m.Yend));
-        }
-        else{
-            double avgPath = 0.0, n = 10.0, scoreCounter = 0.0;
-            boolean b = true;
-            for (int i = 0; i < n; i++) {
-                Maze m = null;
-                try {
-                    m = new Maze(h, w, limit, differentMazes);
-                } catch (Exception e) { }
-                m.reset();
-                while (!m.isEnd()) {
-                    m.performAction(dqn.produceActionGreedy(m.getCurrentState(), dqn.getTargetNetwork()));
-                }
-                b&=m.Xcurrent==m.Xend&&m.Ycurrent==m.Yend;
-                avgPath+=m.pathLenght;
-                scoreCounter+= (m.Xcurrent == m.Xend || m.Ycurrent == m.Yend) ?1.0:0.0;
-            }
-            avgPath/=n;
-            scoreCounter/=n;
-            return new Pair<>("avg path: " + avgPath + "; end reached in " +scoreCounter*100 +"% cases", b);
-        }
 
+    @Override
+    public Pair<String, Boolean> getScore(Learner dqn){
+        Maze m = null;
+        try {
+            m = (Maze) this.clone();
+        } catch (Exception e) {
+        }
+        m.reset();
+        while (!m.isEnd()) {
+            m.performAction(dqn.produceActionGreedy(m.getCurrentState(), dqn.getTargetNetwork()));
+        }
+        return new Pair<>("avg path: " + m.pathLenght + "; " + ((m.Xcurrent == m.Xend || m.Ycurrent == m.Yend) ? "end reached" : "end isn`t reached"), (m.Xcurrent == m.Xend || m.Ycurrent == m.Yend));
     }
     @Override
-    protected Environment clone() {
+    public Environment clone() {
         try {
-            Maze m = new Maze(h, w, limit, differentMazes);
+            Maze m = new Maze(h, w, limit);
             m.maze=maze;
             m.pathLenght=pathLenght;
             m.Xcurrent=Xcurrent;

@@ -18,5 +18,15 @@ public class OtherTools {
         }
         return ret;
     }
-
+    public static double[] convert2to1(double[][] value){
+        double[] ret = new double[value.length*value[0].length];
+        int i = 0;
+        for(double[] subItem: value){
+            for (double item:subItem){
+                ret[i] = item;
+                i++;
+            }
+        }
+        return ret;
+    }
 }

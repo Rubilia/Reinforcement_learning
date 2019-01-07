@@ -1,5 +1,6 @@
-package DQN_learning;
+package DQN_learning.Environment;
 
+import DQN_learning.Learner.Learner;
 import Tools.Pair;
 
 public abstract class Environment{
@@ -8,7 +9,7 @@ public abstract class Environment{
     public abstract boolean isEnd();
     public abstract void reset();
     public abstract State getCurrentState();
-    public abstract Pair<String, Boolean> getScore(DQN_Learner dqn);
+    public abstract Pair<String, Boolean> getScore(Learner dqn);
     @Override
-    protected abstract Environment clone();
+    public abstract Environment clone();
 }

@@ -1,6 +1,11 @@
-package DQN_learning;
+package DQN_learning.TD_Learning;
+import DQN_learning.Environment.State;
+import DQN_learning.Environment.Step;
+import DQN_learning.Learner.Learner;
 import Tools.Pair;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
@@ -12,92 +17,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class DQN_Learner {
-    public enum InputType{
-        Covolution, Dense;
-        public int GetId(InputType type){
-            if (type.equals(Covolution))return 0;
-            else if (type.equals(Dense))return 1;
-            else return -1;
-        }
-    }
-    public enum NetworkType{
-        OneNetwork, MultiNetwork
-    }
-    private double rewardScaler = 1.0;
-    public InputType networkType;
-    private boolean useGPU = false;
+public class DQN_TD_Learner extends Learner {
     //GPU learning doesn`t work yet;
-    private Network target, pastNetwork;
-    private List<Step> ExperienceDataSet;
-    private Environment environment;
-    private double epsilon = 1.0, minEpsilon = 0.1, epsilonDecay = 0.9;
-    private int batchLearningSize = 8;
-    private double y = 0.95;
-    private int actionSpaceSize, epsilonUpdateTime = 200, netUpdateFrequncy = 1000, miniBatchSize = 128, experienceStoredMaxAmount = 200000, learningEpochsPerIteration = 10, inputSize = 1, scoreListener = 100;
     Random rnd = new Random();
-    public DQN_Learner(MultiLayerConfiguration net, InputType netType, NetworkType networkType, int actionSpaceSize){
-        this.actionSpaceSize = actionSpaceSize;
-        this.target = new Network(networkType , net, actionSpaceSize, useGPU);
-        this.networkType = netType;
-        this.pastNetwork = target.clone();
-        ExperienceDataSet = new ArrayList<>();
-        try { (new File("Log.txt")).delete(); Files.createFile(Paths.get("Log.txt")); Files.write(Paths.get("Log.txt"), "".getBytes(), StandardOpenOption.WRITE); } catch (IOException e) { }
-    }
-    public void setRewardScaler(double rewardScaler) {
-        this.rewardScaler = rewardScaler;
-    }
-    public double getRewardScaler() {
-        return rewardScaler;
-    }
-    public int getBatchLearningSize() {
-        return batchLearningSize;
-    }
-    public double getY() {
-        return y;
-    }
-    public void setEpsilon(double epsilon) {
-        this.epsilon = epsilon;
-    }
-    public void setBatchLearningSize(int batchLearningSize) {
-        this.batchLearningSize = batchLearningSize;
-    }
-    public void setEpsilonDecay(double epsilonDecay) {
-        this.epsilonDecay = epsilonDecay;
-    }
-    public void setUseGPU(boolean useGPU) {
-        this.useGPU = useGPU;
-    }
-    public void setScoreListener(int scoreListener){this.scoreListener=scoreListener;}
-    public void setInputSize(int size){this.inputSize = size;}
-    public void setEpsilonUpdateTime(int epsilonUpdateTime) {
-        this.epsilonUpdateTime = epsilonUpdateTime;
-    }
+    private int netUpdateFrequncy = 32, miniBatchSize = 16;
     public void setNetUpdateFrequncy(int netUpdateFrequncy) {
         this.netUpdateFrequncy = netUpdateFrequncy;
     }
     public void setMiniBatchSize(int miniBatchSize) {
         this.miniBatchSize = miniBatchSize;
     }
-    public void setExperienceStoredMaxAmount(int experienceStoredMaxAmount) throws Exception {
-        if (experienceStoredMaxAmount<4){throw new Exception("Unable to set values smaller than 4 for Experience replay stack size");}
-        this.experienceStoredMaxAmount = experienceStoredMaxAmount;
-        this.ExperienceDataSet = new ArrayList<>(experienceStoredMaxAmount);
-    }
-    public void setLearningEpochsPerIteration(int learningEpochsPerIteration) {
-        this.learningEpochsPerIteration = learningEpochsPerIteration;
-    }
-    public void setEnvironment(Environment env){
-        this.environment = env;
-    }
-    public void setActionSpaceSize(int aSize) {
-        this.actionSpaceSize = aSize;
-    }
-    public void setMinEpsilon(double epsilon) {
-        this.minEpsilon = epsilon;
-    }
-    public void setY(double y) {
-        this.y = y;
+
+    public DQN_TD_Learner(MultiLayerConfiguration net, InputType netType, int actionSpaceSize){
+        this.actionSpaceSize = actionSpaceSize;
+        this.target = new MultiLayerNetwork(net);
+        this.target.init();
+        this.networkType = netType;
+        this.pastNetwork = target.clone();
+        this.pastNetwork.init();;
+        ExperienceDataSet = new ArrayList<>();
+        try { (new File("Log.txt")).delete(); Files.createFile(Paths.get("Log.txt")); Files.write(Paths.get("Log.txt"), "".getBytes(), StandardOpenOption.WRITE); } catch (IOException e) { }
     }
     public void Learn(int iterations){
         int counter = 0, localCounter = 0;
@@ -130,16 +69,42 @@ public class DQN_Learner {
         }
         environment.reset();
     }
+    public void learnExperienceReplay(Step s){
+        Step[] data = sampleData(s);
+        double[] Q;
+        double[][] Q_Target = new double[data.length][];
+        State[] input = new State[data.length];
+        for (int i = 0; i < data.length; i++) {
+            Q = computeQ(data[i].getBeginState(), target);
+            if (data[i].isTerminate()){Q[data[i].getA()] = data[i].getR()*getRewardScaler();}
+            else{ Q[data[i].getA()] = data[i].getR()*getRewardScaler()+getY()*getMaxQ(computeQ(data[i].getEndState(), pastNetwork)); }
+            input[i] = data[i].getBeginState();
+            Q_Target[i] = Q.clone();
+        }
+        DataSet dataSet;
+        if (networkType.equals(InputType.Dense)){
+            double[][] inputs = new double[data.length][];
+            for (int i = 0; i < data.length; i++) {
+                inputs[i] = data[i].getBeginStateDense();
+            }
+            dataSet = new DataSet(Nd4j.create(inputs), Nd4j.create(Q_Target));
+        }
+        else{
+            double[][][][] inputs = new double[data.length][][][];
+            for (int i = 0; i < data.length; i++) {
+                inputs[i] = data[i].getBeginStateConv();
+            }
+            dataSet = new DataSet(Nd4j.create(inputs), Nd4j.create(Q_Target));
+        }
+        for (int i = 0; i < learningEpochsPerIteration; i++) {
+            target.fit(dataSet);
+        }
+    }
     public void Log(String txt){
         txt+="\n";
         try {
             Files.write(Paths.get("Log.txt"), txt.getBytes(), StandardOpenOption.APPEND);
         }catch (Exception e){}
-    }
-    public void learnExperienceReplay(Step s){
-        Step[] ReplayStack = sampleData();
-        ReplayStack[ReplayStack.length-1] = s;
-        target.LearnExperienceReplay(ReplayStack, this);
     }
     public double getMaxQ(double[] Q){
         double u  = Q[0];
@@ -148,6 +113,17 @@ public class DQN_Learner {
         }
         return u;
     }
+
+    @Override
+    public double getY() {
+        return y;
+    }
+
+    @Override
+    public MultiLayerNetwork getTargetNetwork() {
+        return target;
+    }
+
     public static double getMSE(double[] A, double[] B){
         double MSE = 0.0;
         for (int i = 0; i < A.length; i++) {
@@ -155,7 +131,7 @@ public class DQN_Learner {
         }
         return MSE;
     }
-    private Step[] sampleData(){
+    private Step[] sampleData(Step s){
         Step[] ret;
         if (ExperienceDataSet.size()<=miniBatchSize){
             ret = new Step[ExperienceDataSet.size()+1];
@@ -178,17 +154,19 @@ public class DQN_Learner {
                 j++;
             }
         }
+        ret[ret.length-1] = s.clone();
         return ret;
     }
-    public int produceAction(State s, Network net){
+    public int produceAction(State s, MultiLayerNetwork net){
         if (rnd.nextDouble()<epsilon){return rnd.nextInt(actionSpaceSize);}
         return produceActionGreedy(s, net);
     }
-    public int produceActionGreedy(State s, Network net){
-        if (networkType.equals(InputType.Covolution))
-            return getMaxId(net.computeQ(Nd4j.create(s.getConvVersion())));
+    @Override
+    public int produceActionGreedy(State s, MultiLayerNetwork net){
+        if (networkType.equals(InputType.Convolution))
+            return getMaxId(computeQ(Nd4j.create(s.getConvVersion()), net));
         else if (networkType.equals(InputType.Dense))
-            return getMaxId(net.computeQ(Nd4j.create(s.getState())));
+            return getMaxId(computeQ(Nd4j.create(s.getState()), net));
         else
             return rnd.nextInt(actionSpaceSize);
     }
@@ -199,14 +177,10 @@ public class DQN_Learner {
         }
         return i;
     }
+    public MultiLayerNetwork getPastNetwork(){return pastNetwork;}
     public int getMiniBatchSize() {
         return miniBatchSize;
     }
-    public int getLearningEpochsPerIteration() {
-        return learningEpochsPerIteration;
-    }
-    public Network getTargetNetwork(){return target;}
-    public Network getPastNetwork(){return pastNetwork;}
     private void updatePastNetwork(){
         this.pastNetwork = this.target.clone();
     }

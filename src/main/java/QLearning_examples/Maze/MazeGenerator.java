@@ -1,4 +1,4 @@
-package Double_DQN_examples;
+package QLearning_examples.Maze;
 
 import java.util.Collections;
 import java.util.Arrays;
